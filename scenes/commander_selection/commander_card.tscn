@@ -1,0 +1,93 @@
+[gd_scene load_steps=5 format=3 uid="uid://dkurtulus_commander_card"]
+
+[ext_resource type="Script" path="res://scenes/commander_selection/commander_card.gd" id="1_script"]
+[ext_resource type="FontFile" uid="uid://brrogx7oqdjar" path="res://assets/alfabet98.ttf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.137255, 0.0588235, 0.0588235, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.831373, 0.686275, 0.215686, 0.5)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_separator"]
+color = Color(0.831373, 0.686275, 0.215686, 0.6)
+thickness = 1
+
+[node name="CommanderCard" type="PanelContainer"]
+custom_minimum_size = Vector2(300, 480)
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("1_script")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PortraitContainer" type="AspectRatioContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+ratio = 1.0
+
+[node name="Portrait" type="TextureRect" parent="VBoxContainer/PortraitContainer"]
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="NameLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+text = "Commander Name"
+horizontal_alignment = 1
+
+[node name="TypeContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="TypeLabel" type="Label" parent="VBoxContainer/TypeContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.831373, 0.686275, 0.215686, 1)
+theme_override_font_sizes/font_size = 16
+text = "Organizer"
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_separator")
+
+[node name="PositionLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 0.7)
+theme_override_font_sizes/font_size = 13
+text = "Chief of Staff, 1st Army"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BackstoryContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+
+[node name="BackstoryLabel" type="RichTextLabel" parent="VBoxContainer/BackstoryContainer"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.878431, 0.878431, 0.815686, 0.85)
+theme_override_font_sizes/normal_font_size = 12
+bbcode_enabled = true
+text = "Commander backstory goes here..."
+scroll_active = false
+
+[node name="SelectButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 1)
+theme_override_colors/font_hover_color = Color(0.831373, 0.686275, 0.215686, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 20
+text = "Select"

@@ -1,0 +1,214 @@
+[gd_scene load_steps=4 format=3 uid="uid://dkurtulus_commander_selection"]
+
+[ext_resource type="Script" path="res://scenes/commander_selection/commander_selection.gd" id="1_script"]
+[ext_resource type="FontFile" uid="uid://brrogx7oqdjar" path="res://assets/alfabet98.ttf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bonuses"]
+bg_color = Color(0.05, 0.08, 0.05, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.6, 0.3, 0.7)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="CommanderSelection" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="Background" type="ColorRect" parent="BackgroundLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.025, 0.035, 1)
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="Header" type="MarginContainer" parent="UILayer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 20.0
+offset_right = 400.0
+offset_bottom = 100.0
+grow_horizontal = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UILayer/Header"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="UILayer/Header/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 48
+text = "Choose Your Commander"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="UILayer/Header/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.831373, 0.686275, 0.215686, 0.9)
+theme_override_font_sizes/font_size = 18
+text = "Select your leader"
+horizontal_alignment = 1
+
+[node name="TabsContainer" type="HBoxContainer" parent="UILayer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -500.0
+offset_top = 110.0
+offset_right = 500.0
+offset_bottom = 160.0
+grow_horizontal = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="ContentContainer" type="HBoxContainer" parent="UILayer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -580.0
+offset_top = 175.0
+offset_right = 580.0
+offset_bottom = 620.0
+grow_horizontal = 2
+theme_override_constants/separation = 40
+
+[node name="LeftPanel" type="VBoxContainer" parent="UILayer/ContentContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 15
+
+[node name="NameLabel" type="Label" parent="UILayer/ContentContainer/LeftPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 36
+text = "Commander Name"
+
+[node name="TypeLabel" type="Label" parent="UILayer/ContentContainer/LeftPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.831373, 0.686275, 0.215686, 1)
+theme_override_font_sizes/font_size = 20
+text = "Organizer"
+
+[node name="PositionLabel" type="Label" parent="UILayer/ContentContainer/LeftPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 0.7)
+theme_override_font_sizes/font_size = 16
+text = "Chief of Staff, 1st Army"
+
+[node name="BiographyContainer" type="MarginContainer" parent="UILayer/ContentContainer/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_top = 10
+
+[node name="BiographyLabel" type="RichTextLabel" parent="UILayer/ContentContainer/LeftPanel/BiographyContainer"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.878431, 0.878431, 0.815686, 0.9)
+theme_override_font_sizes/normal_font_size = 15
+bbcode_enabled = true
+text = "Commander biography goes here..."
+
+[node name="BonusesBox" type="PanelContainer" parent="UILayer/ContentContainer/LeftPanel"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bonuses")
+
+[node name="MarginContainer" type="MarginContainer" parent="UILayer/ContentContainer/LeftPanel/BonusesBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 10
+
+[node name="BonusesLabel" type="RichTextLabel" parent="UILayer/ContentContainer/LeftPanel/BonusesBox/MarginContainer"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.4, 0.9, 0.4, 1)
+theme_override_font_sizes/normal_font_size = 16
+bbcode_enabled = true
+text = "[b]Commander Bonuses[/b]
++1 Officer slot
++25% Officer efficiency"
+fit_content = true
+scroll_active = false
+
+[node name="RightPanel" type="VBoxContainer" parent="UILayer/ContentContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="PortraitContainer" type="AspectRatioContainer" parent="UILayer/ContentContainer/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+ratio = 0.75
+
+[node name="Portrait" type="TextureRect" parent="UILayer/ContentContainer/RightPanel/PortraitContainer"]
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="SelectButton" type="Button" parent="UILayer"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -70.0
+offset_right = 100.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 1)
+theme_override_colors/font_hover_color = Color(0.831373, 0.686275, 0.215686, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 26
+text = "Select"
+
+[node name="BackButton" type="Button" parent="UILayer"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -70.0
+offset_right = 180.0
+offset_bottom = -25.0
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.992157, 0.815686, 1)
+theme_override_colors/font_hover_color = Color(0.831373, 0.686275, 0.215686, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+text = "Back"
+flat = true
+
+[node name="TransitionLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="FadeRect" type="ColorRect" parent="TransitionLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

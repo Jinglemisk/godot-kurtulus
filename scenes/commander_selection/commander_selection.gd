@@ -232,7 +232,7 @@ func _on_select_pressed() -> void:
 	var tween = create_tween()
 	tween.tween_property(fade_rect, "color:a", 1.0, 0.5)
 	tween.tween_callback(func():
-		# TODO: Load game scene
+		# TODO: Load battle scene
 		print("Starting game with commander: ", data.name)
 		print("Campaign: ", GameManager.selected_campaign_id)
 	)

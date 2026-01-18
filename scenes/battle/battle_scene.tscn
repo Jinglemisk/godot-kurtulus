@@ -1,7 +1,7 @@
 [gd_scene load_steps=15 format=3 uid="uid://cqw8x7nk3dmvp"]
 
 [ext_resource type="Script" path="res://scenes/battle/battle_scene.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://commander_scene" path="res://scenes/battle/components/commander.tscn" id="8_commander"]
+[ext_resource type="PackedScene" uid="uid://unit_scene" path="res://scenes/battle/components/unit.tscn" id="8_unit"]
 [ext_resource type="Texture2D" path="res://assets/sprites/world/grass-ground-rdy.png" id="2_grass"]
 [ext_resource type="Shader" path="res://assets/shaders/ground_terrain.gdshader" id="3_shader"]
 [ext_resource type="Texture2D" path="res://assets/sprites/world/tree-rdy.png" id="4_tree"]
@@ -156,7 +156,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 1.5, 50)
 mesh = SubResource("CylinderMesh_post")
 surface_material_override/0 = SubResource("StandardMaterial3D_wood")
 
-[node name="Commander" parent="." instance=ExtResource("8_commander")]
+[node name="Unit" parent="." instance=ExtResource("8_unit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
 
 [node name="CameraPivot" type="Node3D" parent="."]
@@ -194,7 +194,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.99, 0.82, 0.5)
 theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 14
-text = "Phase 2: Movement"
+text = "Phase 3: Formation"
 
 [node name="TransitionLayer" type="CanvasLayer" parent="UI"]
 layer = 10

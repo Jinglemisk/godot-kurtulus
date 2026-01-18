@@ -1,18 +1,19 @@
 extends Node3D
 
-## BattleScene - Phase 2: Commander Movement with camera follow
+## BattleScene - Phase 3: Squad Formation with commander movement
 ## WASD moves commander, camera follows, Q/E orbits around commander
 
 @onready var camera_pivot: Node3D = $CameraPivot
-@onready var commander: CharacterBody3D = $Commander
+@onready var unit: Node3D = $Unit
+@onready var commander: CharacterBody3D = $Unit/Commander
 @onready var fade_rect: ColorRect = $UI/TransitionLayer/FadeRect
 
 const CAMERA_ROTATION_SPEED: float = 2.0  # radians per second
 const CAMERA_FOLLOW_SPEED: float = 8.0    # lerp smoothing factor
 
 func _ready() -> void:
-	# Wire commander's camera reference
-	commander.camera_pivot = camera_pivot
+	# Wire unit's camera reference (unit passes it to commander)
+	unit.camera_pivot = camera_pivot
 
 	# Fade in from black (following project pattern)
 	fade_rect.color.a = 1.0

@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3 uid="uid://unit_scene"]
+
+[ext_resource type="Script" path="res://scenes/battle/components/unit.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://commander_scene" path="res://scenes/battle/components/commander.tscn" id="2_commander"]
+[ext_resource type="PackedScene" uid="uid://soldier_scene" path="res://scenes/battle/components/soldier.tscn" id="3_soldier"]
+
+[node name="Unit" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Commander" parent="." instance=ExtResource("2_commander")]
+
+[node name="Squad" type="Node3D" parent="."]
+
+[node name="Soldier_0" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_1" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_2" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_3" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_4" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_5" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_6" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_7" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_8" parent="Squad" instance=ExtResource("3_soldier")]
+
+[node name="Soldier_9" parent="Squad" instance=ExtResource("3_soldier")]

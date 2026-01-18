@@ -76,36 +76,46 @@ The camera should feel like you're following the commander from behind:
 
 Break the implementation into 5 incremental phases. Each phase produces a testable result.
 
-### Phase 1: 3D Scene Foundation
+### Phase 1: 3D Scene Foundation ✓ COMPLETE
 **Goal:** Empty battlefield with working camera controls
 
-- [ ] Create `scenes/battle/battle_scene.tscn` with Node3D root
-- [ ] Add WorldEnvironment (procedural sky, ambient light)
-- [ ] Add DirectionalLight3D (sun with shadows)
-- [ ] Add Ground (PlaneMesh 100×100, green/brown color)
-- [ ] Add CameraPivot (Node3D) + Camera3D child
-- [ ] Implement Q/E camera orbit in `battle_scene.gd`
-- [ ] Add UI CanvasLayer with FadeRect
+- [x] Create `scenes/battle/battle_scene.tscn` with Node3D root
+- [x] Add WorldEnvironment (procedural sky, ambient light)
+- [x] Add DirectionalLight3D (sun with shadows)
+- [x] Add Ground (PlaneMesh 100×100 with terrain shader for grass/dirt variation)
+- [x] Add CameraPivot (Node3D) + Camera3D child
+- [x] Implement Q/E camera orbit in `battle_scene.gd`
+- [x] Add UI CanvasLayer with FadeRect
+- [x] Add world objects (8 trees, 1 house, 1 oxcart as billboarded Sprite3D)
+- [x] Add boundary markers (4 corner posts)
+- [x] Add controls HUD overlay
 
 **Test:** Run scene directly, Q/E rotates camera around empty field.
 
 ---
 
-### Phase 2: Commander Movement
+### Phase 2: Commander Movement ✓ COMPLETE
 **Goal:** Single controllable character with camera follow
 
-- [ ] Create `scenes/battle/components/commander.tscn` (CharacterBody3D + Sprite3D)
-- [ ] Set Sprite3D billboard mode, pixel filtering, load `ataturk-front-rdy.png`
-- [ ] Implement WASD movement in `commander.gd` relative to camera basis
-- [ ] Camera pivot follows commander position with lerp smoothing
-- [ ] Add input actions to `project.godot` (move_forward, move_back, move_left, move_right, camera_left, camera_right, attack)
+- [x] Create `scenes/battle/components/commander.tscn` (CharacterBody3D + Sprite3D)
+- [x] Set Sprite3D billboard mode, pixel filtering, load `ataturk-front-rdy.png`
+- [x] Implement WASD movement in `commander.gd` relative to camera basis
+- [x] Camera pivot follows commander position with lerp smoothing
+- [x] Add input actions to `project.godot` (already configured in Phase 1)
 
-**Test:** WASD moves commander, camera follows, Q/E orbits around commander.
+**Enhancements Added:**
+- [x] **Momentum physics**: Acceleration (20 units/s²), deceleration (15 units/s²), turn penalty (40% speed on direction change)
+- [x] **Directional sprites**: Front, back, side, and three-quarter view based on movement direction
+- [x] **Boundary constraints**: Commander cannot leave arena (48-unit boundary inside posts)
+- [x] **Ground shadow**: Circular shader-based shadow with radial falloff
+- [x] **Dust particles**: GPUParticles3D emitted when moving at >30% speed
+
+**Test:** WASD moves commander with momentum, camera follows, Q/E orbits around commander. Sprite changes direction based on movement. Shadow and dust effects visible.
 
 ---
 
 ### Phase 3: Squad Formation
-**Goal:** 10 soldiers following commander in wedge formation
+**Goal:** 10 soldiers following commander in an infantry block formation
 
 - [ ] Create `scenes/battle/components/soldier.tscn` (CharacterBody3D + Sprite3D)
 - [ ] Load `infantry/front-rdy.png`, set billboard mode
@@ -141,12 +151,12 @@ Break the implementation into 5 incremental phases. Each phase produces a testab
 **Goal:** Complete battle scene with enemy and scene flow
 
 - [ ] Add EnemyUnit (duplicate of unit.tscn, red modulate, rotated 180°, at z=-20)
-- [ ] Add world objects: trees, house, oxcart (Sprite3D billboards)
-- [ ] Add grass texture to ground material (or keep solid color)
-- [ ] Wire `commander_selection.gd` line 235 to load battle scene
+- [x] ~~Add world objects: trees, house, oxcart (Sprite3D billboards)~~ (moved to Phase 1)
+- [x] ~~Add grass texture to ground material~~ (terrain shader with grass/dirt noise)
+- [x] ~~Wire `commander_selection.gd` line 235 to load battle scene~~ (done in Phase 1)
 - [ ] Add AudioStreamPlayer for `battle-music.mp3`
 - [ ] Use `AudioManager.crossfade_to()` for music transition
-- [ ] Fade-in on scene ready
+- [x] ~~Fade-in on scene ready~~ (done in Phase 1)
 
 **Test:** Full flow: Main Menu → Campaign → Commander → Battle scene with both units, music, and working controls.
 
@@ -156,23 +166,49 @@ Break the implementation into 5 incremental phases. Each phase produces a testab
 
 ```
 scenes/battle/
-├── battle_scene.tscn        # Main 3D scene with camera, lighting, ground
-├── battle_scene.gd          # Camera orbit, input routing
+├── battle_scene.tscn        # Main 3D scene with camera, lighting, ground ✓
+├── battle_scene.gd          # Camera orbit, input routing, camera follow ✓
 └── components/
     ├── unit.tscn            # Commander + squad container (Node3D)
     ├── unit.gd              # Formation setup, attack cascade
-    ├── commander.tscn       # CharacterBody3D with Sprite3D (billboard)
-    ├── commander.gd         # 3D movement, sprite facing
+    ├── commander.tscn       # CharacterBody3D with Sprite3D, shadow, dust ✓
+    ├── commander.gd         # Momentum movement, directional sprites ✓
     ├── soldier.tscn         # CharacterBody3D with Sprite3D (billboard)
     └── soldier.gd           # Formation follow behavior
+
+assets/shaders/
+├── ground_terrain.gdshader  # Terrain shader with grass/dirt noise blending ✓
+└── circular_shadow.gdshader # Radial falloff shadow for commander ✓
 ```                                                                                                   
                                                                                                       
 ---                                                                                                   
                                                                                                       
-## Assets to Create/Add                                                                               
-                                                                                                      
-1. **assets/sprites/world/grass-ground.png** - Generate grass/dirt texture for arena floor            
-2. **assets/battle-music.mp3** - User will provide (placeholder reference in scene)                   
+## Assets to Create/Add
+
+1. ~~**assets/sprites/world/grass-ground.png**~~ - Using existing `grass-ground-rdy.png` with terrain shader
+2. **assets/battle-music.mp3** - User will provide (placeholder reference in scene)
+
+### Terrain Shader (`ground_terrain.gdshader`)
+Uses procedural noise to blend between original dirt texture and green-tinted grass:
+- `grass_tint`: Green color applied to grass areas (default: 0.4, 0.6, 0.3)
+- `noise_scale`: Size of grass/dirt patches (default: 2.0)
+- `grass_threshold`: Balance of grass vs dirt (default: 0.5)
+- `blend_softness`: Smoothness of transitions (default: 0.1)
+
+### Circular Shadow Shader (`circular_shadow.gdshader`)
+Spatial shader for commander ground shadow with radial falloff:
+- `shadow_color`: Color with alpha (default: black at 0.4 alpha)
+- `falloff`: Controls edge softness (default: 1.5, range 0.1-3.0)
+- Render mode: `unshaded, cull_disabled, depth_draw_never, shadows_disabled`
+- Discards pixels outside unit circle for clean circular shape
+
+### Dust Particles (GPUParticles3D)
+Commander emits dust when moving at >30% max speed:
+- Amount: 12 particles
+- Lifetime: 0.6 seconds
+- Direction: Upward with gravity pulling down
+- Color: Tan/brown (0.6, 0.5, 0.35) with transparency
+- Mesh: Small boxes (0.15 units)                   
                                                                                                       
 ## Files to Modify                                                                                    
                                                                                                       
@@ -194,25 +230,41 @@ get_tree().change_scene_to_file("res://scenes/battle/battle_scene.tscn")
                                                                                                       
 ## Scene Hierarchy (3D with Billboarded Sprites)
 
-### battle_scene.tscn
+### battle_scene.tscn (Phase 2 - Current)
 ```
 BattleScene (Node3D)
 ├── Environment (WorldEnvironment)
-│   └── Sky + ambient light settings
-├── DirectionalLight3D (sun-like, casting shadows)
-├── Ground (MeshInstance3D - large plane with grass texture)
+│   └── ProceduralSky + ambient light settings
+├── Sun (DirectionalLight3D - casting shadows)
+├── Ground (MeshInstance3D - PlaneMesh 100×100 with terrain shader)
 ├── WorldObjects (Node3D)
-│   ├── Tree_0..3 (Sprite3D - billboard mode, world/tree.png)
-│   ├── House_0..1 (Sprite3D - billboard mode, world/house.png)
-│   └── Oxcart_0 (Sprite3D - billboard mode, world/oxcart.png)
+│   ├── Tree_0..7 (Sprite3D × 8, billboard, pixel_size=0.01)
+│   ├── House_0 (Sprite3D, billboard, pixel_size=0.008)
+│   └── Oxcart_0 (Sprite3D, billboard, pixel_size=0.006)
+├── Boundaries (Node3D)
+│   └── Post_NW, Post_NE, Post_SW, Post_SE (CylinderMesh corner markers)
+├── Commander (commander.tscn instance)
+│   ├── Sprite3D (billboard, pixel_size=0.004, directional textures)
+│   ├── Shadow (MeshInstance3D - QuadMesh with circular_shadow shader)
+│   └── DustParticles (GPUParticles3D - tan/brown dust when moving)
+├── CameraPivot (Node3D) - follows commander position
+│   └── Camera3D (offset: 0, 8, 12 - looking down ~30°)
+└── UI (CanvasLayer)
+    ├── ControlsHUD (MarginContainer - bottom-left)
+    │   └── VBoxContainer
+    │       ├── ControlsLabel ("WASD - Move | Q/E - Rotate")
+    │       └── PhaseLabel ("Phase 2: Movement")
+    └── TransitionLayer (CanvasLayer layer=10)
+        └── FadeRect (for transitions)
+```
+
+### battle_scene.tscn (Future Phases)
+```
+BattleScene (Node3D)
+├── ... (Phase 1 structure above)
 ├── PlayerUnit (unit.tscn at Vector3(0, 0, 40))
 ├── EnemyUnit (unit.tscn at Vector3(0, 0, -40), modulate=red)
-├── CameraPivot (Node3D - follows commander)
-│   └── Camera3D (positioned behind/above, looking at commander)
-├── AudioStreamPlayer (battle-music.mp3, autoplay)
-└── UI (CanvasLayer)
-    ├── HUD elements
-    └── FadeRect (for transitions)
+└── AudioStreamPlayer (battle-music.mp3, autoplay)
 ```
 
 ### unit.tscn
@@ -238,46 +290,106 @@ CameraPivot (Node3D) - position follows commander
                                                                                                       
 ## Core Logic (3D Implementation)
 
-### Movement (commander.gd)
+### Movement (commander.gd) - Implemented
 ```gdscript
+# Constants for momentum physics
+const MAX_SPEED: float = 10.0
+const ACCELERATION: float = 20.0       # Units/sec² - reaches max in 0.5s
+const DECELERATION: float = 15.0       # Units/sec² - stops in ~0.67s
+const TURN_PENALTY: float = 0.4        # Speed multiplier when changing direction
+const TURN_THRESHOLD: float = 0.7      # Dot product threshold for "turning"
+const ARENA_BOUND: float = 48.0        # Boundary constraint
+
 # Get WASD input as Vector2
 var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 
 # Convert to 3D direction relative to camera facing
 var camera_basis = camera_pivot.global_transform.basis
-var move_dir = (camera_basis.z * input_dir.y + camera_basis.x * input_dir.x).normalized()
-move_dir.y = 0  # Keep movement on ground plane
+var desired_dir = (camera_basis.z * input_dir.y + camera_basis.x * input_dir.x)
+desired_dir.y = 0
+desired_dir = desired_dir.normalized()
 
-# Apply movement
-velocity = move_dir * SPEED  # SPEED = 10.0 units/sec (3D scale)
+# Apply momentum physics (acceleration, deceleration, turn penalty)
+if desired_dir.length_squared() > 0.01:
+    if current_speed > 0.1 and current_direction.dot(desired_dir) < TURN_THRESHOLD:
+        current_speed *= TURN_PENALTY  # Slow down when turning
+    current_direction = desired_dir
+    current_speed = minf(current_speed + ACCELERATION * delta, MAX_SPEED)
+    update_sprite_facing(input_dir)  # Change sprite based on direction
+else:
+    current_speed = maxf(current_speed - DECELERATION * delta, 0.0)
+
+velocity = current_direction * current_speed
 move_and_slide()
 
-# Rotate commander sprite to face movement direction
-if move_dir.length() > 0.1:
-    var target_angle = atan2(move_dir.x, move_dir.z)
-    # Update sprite facing based on angle
+# Enforce boundary constraints
+global_position.x = clampf(global_position.x, -ARENA_BOUND, ARENA_BOUND)
+global_position.z = clampf(global_position.z, -ARENA_BOUND, ARENA_BOUND)
 ```
 
-### Camera (battle_scene.gd)
+### Directional Sprites (commander.gd) - Implemented
+```gdscript
+# Preloaded directional textures (6 sprites, mirrored for 8 directions)
+var tex_front: Texture2D = preload("res://assets/sprites/ataturk/ataturk-front-rdy.png")
+var tex_back: Texture2D = preload("res://assets/sprites/ataturk/ataturk-back-rdy.png")
+var tex_side: Texture2D = preload("res://assets/sprites/ataturk/ataturk-side-left-rdy.png")
+var tex_three_quarter: Texture2D = preload("res://assets/sprites/ataturk/ataturk-three-quarter-rdy.png")
+var tex_three_quarter_back: Texture2D = preload("res://assets/sprites/ataturk/ataturk-three-quarter-back-rdy.png")
+
+func update_sprite_facing(input_dir: Vector2) -> void:
+    var abs_x := absf(input_dir.x)
+    var abs_y := absf(input_dir.y)
+    var is_diagonal := abs_x > 0.5 and abs_y > 0.5
+
+    if is_diagonal:
+        if input_dir.y < 0:  # Forward diagonal (W+A/W+D) - show back 3/4
+            sprite.texture = tex_three_quarter_back
+            sprite.flip_h = input_dir.x < 0  # Flip for left
+        else:  # Backward diagonal (S+A/S+D) - show front 3/4
+            sprite.texture = tex_three_quarter
+            sprite.flip_h = input_dir.x > 0  # Flip for right
+    elif abs_y > abs_x:  # Primarily forward/backward
+        sprite.texture = tex_back if input_dir.y < 0 else tex_front
+    else:  # Primarily left/right
+        sprite.texture = tex_side
+        sprite.flip_h = input_dir.x > 0
+```
+
+### 8-Direction Sprite Mapping
+| Input | Direction | Sprite | Mirrored |
+|-------|-----------|--------|----------|
+| W | forward | back | no |
+| S | backward | front | no |
+| A | left | side-left | no |
+| D | right | side-left | yes |
+| W+A | forward-left | 3/4 back | yes |
+| W+D | forward-right | 3/4 back | no |
+| S+A | backward-left | 3/4 front | no |
+| S+D | backward-right | 3/4 front | yes |
+
+### Camera (battle_scene.gd) - Implemented
 ```gdscript
 @onready var camera_pivot: Node3D = $CameraPivot
-@onready var camera: Camera3D = $CameraPivot/Camera3D
+@onready var commander: CharacterBody3D = $Commander
 
 const CAMERA_ROTATION_SPEED = 2.0  # rad/sec
 const CAMERA_FOLLOW_SPEED = 8.0
 
-func _process(delta):
-    # Rotate camera orbit with Q/E
-    if Input.is_action_pressed("camera_left"):
-        camera_pivot.rotate_y(CAMERA_ROTATION_SPEED * delta)
-    if Input.is_action_pressed("camera_right"):
-        camera_pivot.rotate_y(-CAMERA_ROTATION_SPEED * delta)
+func _ready() -> void:
+    commander.camera_pivot = camera_pivot  # Wire camera reference
 
+func _process(delta):
     # Smooth follow commander position
     var target_pos = commander.global_position
     camera_pivot.global_position = camera_pivot.global_position.lerp(
         target_pos, delta * CAMERA_FOLLOW_SPEED
     )
+
+    # Rotate camera orbit with Q/E
+    if Input.is_action_pressed("camera_left"):
+        camera_pivot.rotate_y(CAMERA_ROTATION_SPEED * delta)
+    if Input.is_action_pressed("camera_right"):
+        camera_pivot.rotate_y(-CAMERA_ROTATION_SPEED * delta)
 ```
 
 ### Formation (soldier.gd)
@@ -360,9 +472,4 @@ sprite_3d.no_depth_test = false  # Proper depth sorting
 4. Q/E rotates camera view                                                                            
 5. Movement stays relative to camera angle                                                            
 6. Space triggers attack animation cascade                                                            
-7. Enemy unit visible with red tint across arena                                                      
-                                                                                                      
-                                                                                                      
-If you need specific details from before exiting plan mode (like exact code snippets, error messages, 
-or content you generated), read the full transcript at: /Users/jinglemisk/.claude/projects/-Users-ji  
-nglemisk-Desktop/4882016d-ea2c-40f3-90a2-293b0ad9525c.jsonl
+7. Enemy unit visible with red tint across arena

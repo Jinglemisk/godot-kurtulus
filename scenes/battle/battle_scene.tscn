@@ -1,0 +1,209 @@
+[gd_scene load_steps=15 format=3 uid="uid://cqw8x7nk3dmvp"]
+
+[ext_resource type="Script" path="res://scenes/battle/battle_scene.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://commander_scene" path="res://scenes/battle/components/commander.tscn" id="8_commander"]
+[ext_resource type="Texture2D" path="res://assets/sprites/world/grass-ground-rdy.png" id="2_grass"]
+[ext_resource type="Shader" path="res://assets/shaders/ground_terrain.gdshader" id="3_shader"]
+[ext_resource type="Texture2D" path="res://assets/sprites/world/tree-rdy.png" id="4_tree"]
+[ext_resource type="Texture2D" path="res://assets/sprites/world/house-rdy.png" id="5_house"]
+[ext_resource type="Texture2D" path="res://assets/sprites/world/oxcart-rdy.png" id="6_oxcart"]
+[ext_resource type="FontFile" path="res://assets/alfabet98.ttf" id="7_font"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.45, 0.55, 0.75, 1)
+sky_horizon_color = Color(0.75, 0.7, 0.6, 1)
+ground_bottom_color = Color(0.25, 0.22, 0.18, 1)
+ground_horizon_color = Color(0.55, 0.5, 0.42, 1)
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 2
+ambient_light_color = Color(0.95, 0.9, 0.8, 1)
+ambient_light_energy = 0.3
+tonemap_mode = 2
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(100, 100)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ground"]
+shader = ExtResource("3_shader")
+shader_parameter/ground_texture = ExtResource("2_grass")
+shader_parameter/grass_tint = Color(0.4, 0.6, 0.3, 1)
+shader_parameter/noise_scale = 2.0
+shader_parameter/grass_threshold = 0.5
+shader_parameter/blend_softness = 0.1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_post"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood"]
+albedo_color = Color(0.3, 0.2, 0.15, 1)
+roughness = 0.9
+
+[node name="BattleScene" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Environment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, 0.353553, -0.353553, 0, 0.707107, 0.707107, 0.5, -0.612372, 0.612372, 0, 10, 0)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("ShaderMaterial_ground")
+
+[node name="WorldObjects" type="Node3D" parent="."]
+
+[node name="Tree_0" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 2, -30)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="Tree_1" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 2, -25)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="Tree_2" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 2, 35)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="Tree_3" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 2, 28)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="Tree_4" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 2, -40)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="Tree_5" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, -38)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="Tree_6" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 2, 15)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="Tree_7" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 2, 0)
+pixel_size = 0.01
+billboard = 1
+texture_filter = 0
+texture = ExtResource("4_tree")
+
+[node name="House_0" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1.8, 8)
+pixel_size = 0.008
+billboard = 1
+texture_filter = 0
+texture = ExtResource("5_house")
+
+[node name="Oxcart_0" type="Sprite3D" parent="WorldObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, 10)
+pixel_size = 0.006
+billboard = 1
+texture_filter = 0
+texture = ExtResource("6_oxcart")
+
+[node name="Boundaries" type="Node3D" parent="."]
+
+[node name="Post_NW" type="MeshInstance3D" parent="Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 1.5, -50)
+mesh = SubResource("CylinderMesh_post")
+surface_material_override/0 = SubResource("StandardMaterial3D_wood")
+
+[node name="Post_NE" type="MeshInstance3D" parent="Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 1.5, -50)
+mesh = SubResource("CylinderMesh_post")
+surface_material_override/0 = SubResource("StandardMaterial3D_wood")
+
+[node name="Post_SW" type="MeshInstance3D" parent="Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 1.5, 50)
+mesh = SubResource("CylinderMesh_post")
+surface_material_override/0 = SubResource("StandardMaterial3D_wood")
+
+[node name="Post_SE" type="MeshInstance3D" parent="Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 1.5, 50)
+mesh = SubResource("CylinderMesh_post")
+surface_material_override/0 = SubResource("StandardMaterial3D_wood")
+
+[node name="Commander" parent="." instance=ExtResource("8_commander")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+
+[node name="CameraPivot" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 8, 12)
+current = true
+fov = 60.0
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="ControlsHUD" type="MarginContainer" parent="UI"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -80.0
+offset_right = 250.0
+offset_bottom = -20.0
+grow_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/ControlsHUD"]
+layout_mode = 2
+
+[node name="ControlsLabel" type="Label" parent="UI/ControlsHUD/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.99, 0.82, 0.7)
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 18
+text = "WASD - Move | Q/E - Rotate"
+
+[node name="PhaseLabel" type="Label" parent="UI/ControlsHUD/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.99, 0.82, 0.5)
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 14
+text = "Phase 2: Movement"
+
+[node name="TransitionLayer" type="CanvasLayer" parent="UI"]
+layer = 10
+
+[node name="FadeRect" type="ColorRect" parent="UI/TransitionLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)

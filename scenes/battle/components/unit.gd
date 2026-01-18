@@ -25,15 +25,21 @@ const FORMATION_OFFSETS: Array[Vector3] = [
 # Crowding behavior settings per row
 const ROW_1_SPEED_MIN: float = 0.85
 const ROW_1_SPEED_MAX: float = 1.0
-const ROW_1_DELAY: float = 0.15
+const ROW_1_TARGET_LERP: float = 6.0  # Faster target tracking (front row)
 
 const ROW_2_SPEED_MIN: float = 0.7
 const ROW_2_SPEED_MAX: float = 0.85
-const ROW_2_DELAY: float = 0.3
+const ROW_2_TARGET_LERP: float = 5.0  # Slower target tracking (back row)
 
 # Node references
 @onready var commander: CharacterBody3D = $Commander
 @onready var squad: Node3D = $Squad
+
+# Formation scale for idle tightening
+var formation_scale: float = 1.0
+const FORMATION_SCALE_IDLE: float = 0.7  # Tighter when stopped
+const FORMATION_SCALE_MOVING: float = 1.0
+const FORMATION_SCALE_LERP: float = 2.0  # Transition speed
 
 # Set by battle_scene.gd - passed to commander
 var camera_pivot: Node3D = null:
@@ -50,17 +56,27 @@ func _ready() -> void:
 		var soldier = soldiers[i]
 		soldier.formation_offset = FORMATION_OFFSETS[i]
 		soldier.commander = commander
+		soldier.unit = self  # For formation_scale access
+		soldier.squad_members = soldiers  # For collision avoidance
+		soldier.my_index = i
 
 		# Assign crowding behavior based on row
 		if i < 5:
-			# Row 1 (front row) - faster reaction, no delay
+			# Row 1 (front row) - faster target tracking
 			soldier.follow_speed_multiplier = randf_range(ROW_1_SPEED_MIN, ROW_1_SPEED_MAX)
-			soldier.reaction_delay = ROW_1_DELAY
+			soldier.target_lerp_speed = randf_range(5.0, ROW_1_TARGET_LERP)
 		else:
-			# Row 2 (back row) - slower reaction, slight delay
+			# Row 2 (back row) - slower target tracking (more lag)
 			soldier.follow_speed_multiplier = randf_range(ROW_2_SPEED_MIN, ROW_2_SPEED_MAX)
-			soldier.reaction_delay = ROW_2_DELAY
+			soldier.target_lerp_speed = randf_range(4.0, ROW_2_TARGET_LERP)
 
 		# Start soldiers at their formation position
 		var initial_pos: Vector3 = commander.global_position + FORMATION_OFFSETS[i]
 		soldier.global_position = initial_pos
+
+
+func _process(delta: float) -> void:
+	# Update formation scale based on commander movement (idle tightening)
+	var is_moving: bool = commander.current_speed > 1.0
+	var target_scale: float = FORMATION_SCALE_MOVING if is_moving else FORMATION_SCALE_IDLE
+	formation_scale = lerpf(formation_scale, target_scale, delta * FORMATION_SCALE_LERP)

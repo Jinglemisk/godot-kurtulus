@@ -13,10 +13,21 @@ const ORGANIC_LERP_SPEED: float = 2.0  # How fast to transition to new offset
 # Set by unit.gd after instantiation
 var formation_offset: Vector3 = Vector3.ZERO
 var commander: CharacterBody3D = null
+var unit: Node3D = null  # For formation_scale access
+var squad_members: Array = []  # For collision avoidance
+var my_index: int = 0
 
 # Crowding behavior - set by unit.gd (creates natural lag for back rows)
 var follow_speed_multiplier: float = 1.0  # 0.7-1.0, lower = slower reaction
-var reaction_delay: float = 0.0  # Seconds before responding to new target
+var target_lerp_speed: float = 4.0  # How fast smoothed target approaches real target
+
+# Idle look-at-commander behavior
+const IDLE_LOOK_DELAY: float = 1.0  # Seconds before looking at commander
+var idle_timer: float = 0.0
+
+# Soft collision avoidance
+const SEPARATION_DISTANCE: float = 1.2  # Min distance between soldiers
+const SEPARATION_STRENGTH: float = 3.0  # Push force
 
 # Node references
 @onready var sprite: Sprite3D = $Sprite3D
@@ -35,10 +46,9 @@ var organic_offset: Vector3 = Vector3.ZERO
 var target_organic_offset: Vector3 = Vector3.ZERO
 var organic_timer: float = 0.0
 
-# Crowding: cached target position and delay timer
-var cached_target_pos: Vector3 = Vector3.ZERO
-var target_update_timer: float = 0.0
-var has_initial_target: bool = false
+# Smooth target interpolation (prevents "wait then teleport" behavior)
+var smoothed_target_pos: Vector3 = Vector3.ZERO
+var initialized: bool = false
 
 
 func _ready() -> void:
@@ -63,35 +73,27 @@ func _process(delta: float) -> void:
 	# Smoothly transition organic offset
 	organic_offset = organic_offset.lerp(target_organic_offset, delta * ORGANIC_LERP_SPEED)
 
-	# Calculate new target position
-	var new_target_pos: Vector3 = calculate_formation_position()
+	# Calculate real target position (where soldier SHOULD be)
+	var real_target_pos: Vector3 = calculate_formation_position()
 
-	# Crowding: delay target updates for back-row soldiers
-	if not has_initial_target:
-		# First frame - set target immediately
-		cached_target_pos = new_target_pos
-		has_initial_target = true
-	elif reaction_delay > 0.0:
-		# Check if target changed significantly (commander turned)
-		var target_diff: float = (new_target_pos - cached_target_pos).length()
-		if target_diff > 0.5:
-			# Target changed - start delay timer
-			target_update_timer += delta
-			if target_update_timer >= reaction_delay:
-				# Delay complete - update cached target
-				cached_target_pos = new_target_pos
-				target_update_timer = 0.0
-		else:
-			# Target is similar - update immediately (small movements)
-			cached_target_pos = new_target_pos
-			target_update_timer = 0.0
-	else:
-		# No delay - update target immediately
-		cached_target_pos = new_target_pos
+	# Initialize on first frame
+	if not initialized:
+		smoothed_target_pos = real_target_pos
+		global_position = real_target_pos
+		initialized = true
+		last_position = global_position
+		return
 
-	# Smooth follow to cached target position with variable speed
+	# Smoothed target gradually approaches real target (creates natural lag)
+	smoothed_target_pos = smoothed_target_pos.lerp(real_target_pos, delta * target_lerp_speed)
+
+	# Calculate separation offset for collision avoidance
+	var separation: Vector3 = calculate_separation_offset()
+
+	# Soldier position lerps towards smoothed target + separation
 	var effective_speed: float = FOLLOW_SPEED * follow_speed_multiplier
-	global_position = global_position.lerp(cached_target_pos, delta * effective_speed)
+	var target_with_separation: Vector3 = smoothed_target_pos + separation * delta
+	global_position = global_position.lerp(target_with_separation, delta * effective_speed)
 
 	# Calculate movement speed for dust and sprite
 	var move_dir: Vector3 = global_position - last_position
@@ -101,8 +103,16 @@ func _process(delta: float) -> void:
 	if dust:
 		dust.emitting = move_speed > 3.0  # Emit dust when moving fast enough
 
-	# Update sprite based on movement direction
-	if move_dir.length_squared() > 0.001:
+	# Track idle state for look-at-commander behavior
+	if move_speed < 0.5:
+		idle_timer += delta
+	else:
+		idle_timer = 0.0
+
+	# Update sprite facing: look at commander when idle, else face movement direction
+	if idle_timer >= IDLE_LOOK_DELAY:
+		look_at_commander()
+	elif move_dir.length_squared() > 0.001:
 		update_sprite_facing(move_dir)
 
 	last_position = global_position
@@ -126,8 +136,12 @@ func calculate_formation_position() -> Vector3:
 	var angle: float = atan2(cmd_dir.x, cmd_dir.z)
 	var rotated_offset: Vector3 = formation_offset.rotated(Vector3.UP, angle)
 
+	# Apply formation scale for idle tightening
+	var formation_scale_factor: float = unit.formation_scale if unit else 1.0
+	var scaled_offset: Vector3 = rotated_offset * formation_scale_factor
+
 	# Add organic offset for natural feel
-	return commander.global_position + rotated_offset + organic_offset
+	return commander.global_position + scaled_offset + organic_offset
 
 
 func update_sprite_facing(move_dir: Vector3) -> void:
@@ -142,11 +156,47 @@ func update_sprite_facing(move_dir: Vector3) -> void:
 	if abs_z > abs_x:
 		# Moving primarily forward/backward
 		if move_dir.z > 0:
-			sprite.texture = tex_front  # Moving toward camera
+			sprite.texture = tex_front  # Moving in +Z direction
 		else:
-			sprite.texture = tex_back   # Moving away from camera
+			sprite.texture = tex_back   # Moving in -Z direction
 		sprite.flip_h = false
 	else:
 		# Moving primarily left/right
 		sprite.texture = tex_side
 		sprite.flip_h = move_dir.x > 0  # Flip for right movement
+
+
+func look_at_commander() -> void:
+	# Face toward commander when idle
+	var dir_to_commander: Vector3 = commander.global_position - global_position
+	dir_to_commander.y = 0
+	if dir_to_commander.length_squared() < 0.01:
+		return
+
+	dir_to_commander = dir_to_commander.normalized()
+	var abs_x: float = absf(dir_to_commander.x)
+	var abs_z: float = absf(dir_to_commander.z)
+
+	if abs_z > abs_x:
+		sprite.texture = tex_front if dir_to_commander.z > 0 else tex_back
+		sprite.flip_h = false
+	else:
+		sprite.texture = tex_side
+		sprite.flip_h = dir_to_commander.x > 0
+
+
+func calculate_separation_offset() -> Vector3:
+	# Soft collision avoidance - push away from nearby soldiers
+	var separation: Vector3 = Vector3.ZERO
+	for i in range(squad_members.size()):
+		if i == my_index:
+			continue
+		var other: CharacterBody3D = squad_members[i]
+		var diff: Vector3 = global_position - other.global_position
+		diff.y = 0
+		var dist: float = diff.length()
+		if dist < SEPARATION_DISTANCE and dist > 0.01:
+			# Push away proportional to overlap
+			var overlap: float = SEPARATION_DISTANCE - dist
+			separation += diff.normalized() * overlap * SEPARATION_STRENGTH
+	return separation

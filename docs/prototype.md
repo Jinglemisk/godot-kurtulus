@@ -114,22 +114,33 @@ Break the implementation into 5 incremental phases. Each phase produces a testab
 
 ---
 
-### Phase 3: Squad Formation
-**Goal:** 10 soldiers following commander in an infantry block formation
+### Phase 3: Squad Formation ✓ COMPLETE
+**Goal:** 10 soldiers following commander in 5×2 rectangle formation
 
-- [ ] Create `scenes/battle/components/soldier.tscn` (CharacterBody3D + Sprite3D)
-- [ ] Load `infantry/front-rdy.png`, set billboard mode
-- [ ] Implement formation follow in `soldier.gd` with offset rotation
-- [ ] Create `scenes/battle/components/unit.tscn` (Node3D container)
-- [ ] `unit.gd` spawns 10 soldiers with wedge formation offsets:
+- [x] Create `scenes/battle/components/soldier.tscn` (CharacterBody3D + Sprite3D)
+- [x] Load `infantry/front-rdy.png`, set billboard mode
+- [x] Implement formation follow in `soldier.gd` with offset rotation
+- [x] Create `scenes/battle/components/unit.tscn` (Node3D container)
+- [x] `unit.gd` spawns 10 soldiers with 5×2 rectangle formation:
   ```
-  Row 1: (-1.5, 0, 2), (1.5, 0, 2)
-  Row 2: (-3, 0, 4), (0, 0, 4), (3, 0, 4)
-  Row 3: (-4.5, 0, 6), (-1.5, 0, 6), (1.5, 0, 6), (4.5, 0, 6)
-  Row 4: (0, 0, 8)
+  Commander at front (center)
+  Row 1: (-3, 0, -2.5), (-1.5, 0, -2.5), (0, 0, -2.5), (1.5, 0, -2.5), (3, 0, -2.5)
+  Row 2: (-3, 0, -4.0), (-1.5, 0, -4.0), (0, 0, -4.0), (1.5, 0, -4.0), (3, 0, -4.0)
   ```
 
-**Test:** Move commander, 10 soldiers follow in wedge shape, formation rotates with movement direction.
+**Enhancements Added:**
+- [x] **Dust particles**: Soldiers emit dust when moving (14 particles, 0.7s lifetime)
+- [x] **Ground shadows**: Circular shader-based shadow per soldier
+- [x] **Organic offset**: ±0.3 unit random offset per soldier, changes every 2s
+- [x] **Crowding behavior**: Smooth target interpolation - back row lags naturally
+  - Row 1: target_lerp_speed 5.0-6.0, follow_speed 0.85-1.0
+  - Row 2: target_lerp_speed 4.0-5.0, follow_speed 0.7-0.85
+- [x] **Directional sprites**: Front, back, side based on movement direction
+- [x] **Idle formation tightening**: Formation scales to 70% when stopped, soldiers cluster closer
+- [x] **Look-at-commander when idle**: After 1s stationary, soldiers face toward commander
+- [x] **Soft collision avoidance**: Soldiers push apart if closer than 1.2 units (prevents stacking)
+
+**Test:** Move commander, 10 soldiers follow in rectangle. Formation rotates with movement. Back row lags during turns. Stop moving - soldiers cluster and turn to face commander. Sharp turns - soldiers don't stack.
 
 ---
 

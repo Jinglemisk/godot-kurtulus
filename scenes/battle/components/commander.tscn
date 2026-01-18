@@ -1,0 +1,50 @@
+[gd_scene load_steps=8 format=3 uid="uid://commander_scene"]
+
+[ext_resource type="Script" path="res://scenes/battle/components/commander.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ataturk/ataturk-front-rdy.png" id="2_texture"]
+[ext_resource type="Shader" path="res://assets/shaders/circular_shadow.gdshader" id="3_shadow_shader"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_shadow"]
+size = Vector2(3, 3)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shadow"]
+render_priority = -1
+shader = ExtResource("3_shadow_shader")
+shader_parameter/shadow_color = Color(0, 0, 0, 0.5)
+shader_parameter/falloff = 1.5
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_dust"]
+direction = Vector3(0, 1, 0)
+spread = 45.0
+initial_velocity_min = 0.5
+initial_velocity_max = 1.5
+gravity = Vector3(0, -1, 0)
+scale_min = 0.1
+scale_max = 0.25
+color = Color(0.6, 0.5, 0.35, 0.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_particle"]
+size = Vector3(0.15, 0.15, 0.15)
+
+[node name="Commander" type="CharacterBody3D"]
+script = ExtResource("1_script")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+pixel_size = 0.004
+billboard = 1
+texture_filter = 0
+texture = ExtResource("2_texture")
+
+[node name="Shadow" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.05, 0)
+mesh = SubResource("QuadMesh_shadow")
+surface_material_override/0 = SubResource("ShaderMaterial_shadow")
+
+[node name="DustParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+emitting = false
+amount = 12
+lifetime = 0.6
+process_material = SubResource("ParticleProcessMaterial_dust")
+draw_pass_1 = SubResource("BoxMesh_particle")

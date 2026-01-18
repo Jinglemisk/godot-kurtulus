@@ -196,7 +196,8 @@ Located in `assets/sprites/`:
 - [x] Front view
 - [x] Back view
 - [x] Side left view
-- [x] Three-quarter view
+- [x] Three-quarter front view
+- [x] Three-quarter back view
 - [x] Walk animation (3 frames)
 - [x] Attack animation (3 frames)
 

@@ -74,7 +74,7 @@ The camera should feel like you're following the commander from behind:
 
 ## Phases
 
-Break the implementation into 5 incremental phases. Each phase produces a testable result.
+Break the implementation into 7 incremental phases. Each phase produces a testable result.
 
 ### Phase 1: 3D Scene Foundation ✓ COMPLETE
 **Goal:** Empty battlefield with working camera controls
@@ -144,32 +144,201 @@ Break the implementation into 5 incremental phases. Each phase produces a testab
 
 ---
 
-### Phase 4: Animations & Combat
+### Phase 4: Animations & Combat ✓ COMPLETE
 **Goal:** Walk/attack animations with cascade effect
 
-- [ ] Commander: Load walk textures (`walk-1-rdy.png` to `walk-3-rdy.png`), cycle at 8 FPS while moving
-- [ ] Commander: Load attack textures (`attack-1-rdy.png` to `attack-3-rdy.png`), play at 10 FPS on Space
-- [ ] Soldier: Load walk textures (`walk/front/frame1-rdy.png` to `frame4-rdy.png`)
-- [ ] Soldier: Load attack textures (`attack/front/frame1-rdy.png` to `frame4-rdy.png`)
-- [ ] `unit.gd`: On commander attack, trigger soldiers with 50ms stagger
-- [ ] Return to idle texture when stationary
+- [x] Commander: Walk animation (3 frames at 8 FPS) for left/right movement
+- [x] Commander: Directional idle sprites for forward/back movement
+- [x] Commander: Attack animation (3 frames at 10 FPS) on Space key
+- [x] Commander: `attack_started` signal for cascade trigger
+- [x] Soldier: Directional walk animations (4 directions × 4 frames at 8 FPS)
+- [x] Soldier: Directional attack animations (4 directions × 4 frames at 10 FPS)
+- [x] `unit.gd`: Attack cascade with 50ms stagger per soldier
+- [x] Return to idle sprite when stationary
 
-**Test:** WASD shows walk animation, Space triggers attack cascade through squad.
+**Enhancements Added:**
+- [x] Attack impact particles (dust burst at attack position)
+- [x] Attack cooldown (1 second) to prevent spam
+
+**Test:** WASD shows walk animation (left/right) or directional sprites (forward/back). Space triggers attack cascade through squad with particles and cooldown.
 
 ---
 
-### Phase 5: Polish & Integration
-**Goal:** Complete battle scene with enemy and scene flow
+### Phase 5: Enemy Unit & Health System ✓ COMPLETE
+**Goal:** Add enemy unit with troop-based health, attack range detection, and damage system
 
-- [ ] Add EnemyUnit (duplicate of unit.tscn, red modulate, rotated 180°, at z=-20)
-- [x] ~~Add world objects: trees, house, oxcart (Sprite3D billboards)~~ (moved to Phase 1)
-- [x] ~~Add grass texture to ground material~~ (terrain shader with grass/dirt noise)
-- [x] ~~Wire `commander_selection.gd` line 235 to load battle scene~~ (done in Phase 1)
-- [ ] Add AudioStreamPlayer for `battle-music.mp3`
-- [ ] Use `AudioManager.crossfade_to()` for music transition
-- [x] ~~Fade-in on scene ready~~ (done in Phase 1)
+**Enemy Unit Setup:**
+- [x] Add EnemyUnit (duplicate of unit.tscn, red modulate, rotated 180°, at z=-20)
+- [x] Apply red tint via `_apply_tint_recursive()` to all Sprite3D nodes
+- [x] Enemy is static (no AI - just visual presence with health)
 
-**Test:** Full flow: Main Menu → Campaign → Commander → Battle scene with both units, music, and working controls.
+**Audio Integration:**
+- [x] Use `AudioManager.crossfade_to()` for music transition in `_ready()`
+- [x] Load `battle-music.mp3` via preload
+
+**Troop-Based Health System:**
+- [x] Add `troop_count` property to `unit.gd` (represents total men, e.g., 2000)
+- [x] Add `MAX_TROOP_COUNT` constant (2000)
+- [x] Add `take_damage(amount: int)` method to `unit.gd`
+- [x] Add `troop_count_changed` signal emitted when troops change
+- [x] Add `unit_defeated` signal emitted when troop_count reaches 0
+
+**Soldier Visibility (Troop Representation):**
+- [x] 10 visible soldiers represent the total troop count proportionally
+- [x] Each soldier represents `MAX_TROOP_COUNT / 10` = 200 troops
+- [x] As `troop_count` decreases, soldiers disappear (back row first)
+- [x] `_update_visible_soldiers()` hides soldiers based on remaining troops
+- [x] No death animation yet - soldiers just become invisible
+
+**Attack Range Detection:**
+- [x] Add `ATTACK_RANGE` constant to `battle_scene.gd` (12.0 units)
+- [x] Check distance between player unit and enemy unit on attack
+- [x] Only deal damage when within range
+- [x] Print debug messages for hit/miss feedback
+
+**Damage Dealing:**
+- [x] Connect commander's `attack_started` signal to `_on_player_attack()`
+- [x] `DAMAGE_PER_ATTACK` = 250 (8 attacks to defeat enemy with 2000 troops)
+- [x] Connect to enemy's `unit_defeated` signal for victory trigger
+
+**Test:**
+1. Move player unit toward enemy (WASD)
+2. When close (within 12 units), press Space to attack
+3. Console shows "Attack hit! Enemy troops: X/2000"
+4. Enemy soldiers disappear as troops decrease (back row first)
+5. After 8 attacks, enemy troop_count reaches 0
+6. Commander disappears, victory popup appears
+
+---
+
+### Phase 6: Victory Condition & Game Loop ✓ COMPLETE
+**Goal:** Victory popup when enemy defeated, restart/menu options
+
+**Victory Detection:**
+- [x] In `battle_scene.gd`, connect to enemy unit's `unit_defeated` signal
+- [x] When enemy HP reaches 0, trigger victory sequence
+
+**Victory Sequence:**
+- [x] Freeze player input (disable movement and attack via `input_enabled` flag)
+- [x] Show victory popup after 0.5s delay
+
+**Victory Popup UI:**
+- [x] Create `VictoryPopup` (CenterContainer in UI CanvasLayer)
+- [x] Panel with gold border (`StyleBoxFlat_victory` with #D4AF37 border)
+- [x] "VICTORY!" title in large alfabet98 font (48px, gold)
+- [x] "Enemy Defeated" subtitle (24px, cream)
+- [x] Two buttons: "Play Again" and "Main Menu"
+
+**Button Actions:**
+- [x] "Play Again": Reload battle scene (`get_tree().reload_current_scene()`)
+- [x] "Main Menu": Fade out transition to main menu
+
+**Popup Animation:**
+- [x] Scale from 0 to 1 with bounce (EASE_OUT, TRANS_BACK, 0.4s)
+- [x] Fade in alpha (0.3s)
+
+**Scene Structure Addition:**
+```
+UI (CanvasLayer)
+├── ControlsHUD
+├── TransitionLayer
+│   └── FadeRect
+└── VictoryPopup (CenterContainer, initially hidden)
+    └── Panel (StyleBoxFlat with gold border)
+        └── VBox
+            ├── Title (Label - "VICTORY!")
+            ├── Subtitle (Label - "Enemy Defeated")
+            └── Buttons (HBoxContainer)
+                ├── PlayAgainButton
+                └── MainMenuButton
+```
+
+**Test:** Full victory flow:
+1. Main Menu → Campaign → Commander → Battle
+2. Move to enemy, attack 8 times (250 damage each, 2000 total HP)
+3. Enemy soldiers disappear as HP drops, commander disappears at 0
+4. Victory popup scales in with bounce animation
+5. "Play Again" restarts battle
+6. "Main Menu" fades out and returns to main menu
+
+---
+
+### Phase 7: STITCHING UP
+**Goal:** Implement death animations for units
+
+**Death Animation:**
+- [ ] Create death animation sequence for soldiers and commander
+- [ ] Retrofit death animation to dying units (currently sprites just disappear)
+- [ ] Add death animation trigger when unit health reaches 0
+- [ ] Ensure smooth transition from current state to death animation
+- [ ] Optional: Add death particles/effects for visual feedback
+
+**Test:** When a unit dies, it plays the death animation instead of instantly disappearing.
+
+---
+
+### Phase 5 & 6 Files Summary
+
+| File | Changes |
+|------|---------|
+| `scenes/battle/battle_scene.tscn` | EnemyUnit ✓, VictoryPopup UI ✓, StyleBoxFlat_victory ✓ |
+| `scenes/battle/battle_scene.gd` | Attack range ✓, damage routing ✓, victory popup ✓, button handlers ✓ |
+| `scenes/battle/components/unit.tscn` | (no changes) |
+| `scenes/battle/components/unit.gd` | troop_count ✓, take_damage() ✓, signals ✓, soldier visibility ✓, commander death ✓ |
+
+---
+
+### Troop-Based Health System Code Reference
+
+**unit.gd additions:**
+```gdscript
+signal troop_count_changed(current: int, maximum: int)
+signal unit_defeated
+
+const MAX_TROOP_COUNT: int = 2000  # Total men in unit
+var troop_count: int = MAX_TROOP_COUNT
+
+func take_damage(amount: int) -> void:
+    troop_count = maxi(troop_count - amount, 0)
+    troop_count_changed.emit(troop_count, MAX_TROOP_COUNT)
+    _update_visible_soldiers()
+    if troop_count <= 0:
+        unit_defeated.emit()
+
+func _update_visible_soldiers() -> void:
+    # Each of 10 soldiers represents 200 troops
+    # Hide from back row first as troops decrease
+    var soldiers := squad.get_children()
+    var troops_per_soldier := MAX_TROOP_COUNT / soldiers.size()
+    var soldiers_alive := ceili(float(troop_count) / float(troops_per_soldier))
+    for i in range(soldiers.size()):
+        var reverse_index := soldiers.size() - 1 - i
+        soldiers[reverse_index].visible = (reverse_index < soldiers_alive)
+```
+
+**battle_scene.gd damage routing:**
+```gdscript
+const ATTACK_RANGE: float = 12.0  # Units must be this close to hit
+const DAMAGE_PER_ATTACK: int = 250  # 8 attacks to defeat (2000 / 250 = 8)
+
+var input_enabled: bool = true
+
+func _ready() -> void:
+    # ... existing code ...
+    commander.attack_started.connect(_on_player_attack)
+    enemy_unit.unit_defeated.connect(_on_enemy_defeated)
+
+func _on_player_attack() -> void:
+    if not input_enabled:
+        return
+    if _is_in_attack_range():
+        enemy_unit.take_damage(DAMAGE_PER_ATTACK)
+
+func _on_enemy_defeated() -> void:
+    print("VICTORY!")
+    input_enabled = false
+    # TODO Phase 6: Show victory popup
+```
 
 ---
 
@@ -241,7 +410,7 @@ get_tree().change_scene_to_file("res://scenes/battle/battle_scene.tscn")
                                                                                                       
 ## Scene Hierarchy (3D with Billboarded Sprites)
 
-### battle_scene.tscn (Phase 2 - Current)
+### battle_scene.tscn (Phase 4 - Current)
 ```
 BattleScene (Node3D)
 ├── Environment (WorldEnvironment)
@@ -254,27 +423,22 @@ BattleScene (Node3D)
 │   └── Oxcart_0 (Sprite3D, billboard, pixel_size=0.006)
 ├── Boundaries (Node3D)
 │   └── Post_NW, Post_NE, Post_SW, Post_SE (CylinderMesh corner markers)
-├── Commander (commander.tscn instance)
-│   ├── Sprite3D (billboard, pixel_size=0.004, directional textures)
-│   ├── Shadow (MeshInstance3D - QuadMesh with circular_shadow shader)
-│   └── DustParticles (GPUParticles3D - tan/brown dust when moving)
+├── Unit (unit.tscn - player squad)
+│   ├── Commander (commander.tscn)
+│   └── Squad (10 soldiers in 5×2 formation)
 ├── CameraPivot (Node3D) - follows commander position
 │   └── Camera3D (offset: 0, 8, 12 - looking down ~30°)
 └── UI (CanvasLayer)
     ├── ControlsHUD (MarginContainer - bottom-left)
-    │   └── VBoxContainer
-    │       ├── ControlsLabel ("WASD - Move | Q/E - Rotate")
-    │       └── PhaseLabel ("Phase 2: Movement")
     └── TransitionLayer (CanvasLayer layer=10)
         └── FadeRect (for transitions)
 ```
 
-### battle_scene.tscn (Future Phases)
+### battle_scene.tscn (Phase 5 - Future)
 ```
 BattleScene (Node3D)
-├── ... (Phase 1 structure above)
-├── PlayerUnit (unit.tscn at Vector3(0, 0, 40))
-├── EnemyUnit (unit.tscn at Vector3(0, 0, -40), modulate=red)
+├── ... (Phase 4 structure above)
+├── EnemyUnit (unit.tscn at z=-20, red modulate, rotated 180°)
 └── AudioStreamPlayer (battle-music.mp3, autoplay)
 ```
 
@@ -282,9 +446,26 @@ BattleScene (Node3D)
 ```
 Unit (Node3D)
 ├── Commander (commander.tscn)
-│   └── Sprite3D (billboard_mode = BILLBOARD_ENABLED)
 └── Squad (Node3D)
-    └── Soldier_0..9 (soldier.tscn × 10, each with Sprite3D billboard)
+    └── Soldier_0..9 (soldier.tscn × 10, 5×2 rectangle formation)
+```
+
+### commander.tscn
+```
+Commander (CharacterBody3D)
+├── Sprite3D (billboard, pixel_size=0.004, walk/attack animations)
+├── Shadow (MeshInstance3D - QuadMesh with circular_shadow shader)
+├── DustParticles (GPUParticles3D - tan/brown dust when moving)
+└── AttackParticles (GPUParticles3D - burst on attack, one-shot)
+```
+
+### soldier.tscn
+```
+Soldier (CharacterBody3D)
+├── Sprite3D (billboard, pixel_size=0.003, directional walk/attack)
+├── Shadow (MeshInstance3D - QuadMesh with circular_shadow shader)
+├── DustParticles (GPUParticles3D - dust when moving)
+└── AttackParticles (GPUParticles3D - burst on attack, one-shot)
 ```
 
 ### Camera Setup (Kessen 3 Style)

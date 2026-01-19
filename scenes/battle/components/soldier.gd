@@ -3,12 +3,24 @@ extends CharacterBody3D
 ## Soldier - Formation-following unit that trails behind commander
 ## Uses smooth lerp to maintain formation position relative to commander
 ## Features: dust particles, organic offset, crowding behavior (variable speeds/delays)
+## Phase 4: Directional walk and attack animations
 
 # Formation constants
 const FOLLOW_SPEED: float = 12.0  # Base follow speed
 const ORGANIC_OFFSET_MAX: float = 0.3  # Max random offset in any direction
 const ORGANIC_CHANGE_INTERVAL: float = 2.0  # Seconds between offset changes
 const ORGANIC_LERP_SPEED: float = 2.0  # How fast to transition to new offset
+
+# Animation constants
+const WALK_FPS: float = 8.0
+const ATTACK_FPS: float = 10.0
+
+# Animation state
+enum AnimState { IDLE, WALKING, ATTACKING }
+var anim_state: AnimState = AnimState.IDLE
+var anim_frame: int = 0
+var anim_timer: float = 0.0
+var current_facing: String = "front"  # Track current direction for animations
 
 # Set by unit.gd after instantiation
 var formation_offset: Vector3 = Vector3.ZERO
@@ -32,11 +44,69 @@ const SEPARATION_STRENGTH: float = 3.0  # Push force
 # Node references
 @onready var sprite: Sprite3D = $Sprite3D
 @onready var dust: GPUParticles3D = $DustParticles
+@onready var attack_sound: AudioStreamPlayer3D = get_node_or_null("AttackSound")
+@onready var attack_particles: GPUParticles3D = $AttackParticles
 
-# Directional sprites (4 directions, use mirroring for 8)
+# Directional idle sprites (4 directions, use mirroring for 8)
 var tex_front: Texture2D = preload("res://assets/sprites/infantry/front-rdy.png")
 var tex_back: Texture2D = preload("res://assets/sprites/infantry/back-rdy.png")
 var tex_side: Texture2D = preload("res://assets/sprites/infantry/left-rdy.png")
+
+# Walk animation sprites (4 directions x 4 frames)
+var tex_walk: Dictionary = {
+	"front": [
+		preload("res://assets/sprites/infantry/walk/front/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/front/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/front/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/front/frame4-rdy.png"),
+	],
+	"back": [
+		preload("res://assets/sprites/infantry/walk/back/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/back/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/back/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/back/frame4-rdy.png"),
+	],
+	"left": [
+		preload("res://assets/sprites/infantry/walk/left/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/left/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/left/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/left/frame4-rdy.png"),
+	],
+	"right": [
+		preload("res://assets/sprites/infantry/walk/right/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/right/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/right/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/walk/right/frame4-rdy.png"),
+	],
+}
+
+# Attack animation sprites (4 directions x 4 frames)
+var tex_attack: Dictionary = {
+	"front": [
+		preload("res://assets/sprites/infantry/attack/front/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/front/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/front/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/front/frame4-rdy.png"),
+	],
+	"back": [
+		preload("res://assets/sprites/infantry/attack/back/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/back/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/back/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/back/frame4-rdy.png"),
+	],
+	"left": [
+		preload("res://assets/sprites/infantry/attack/left/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/left/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/left/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/left/frame4-rdy.png"),
+	],
+	"right": [
+		preload("res://assets/sprites/infantry/attack/right/frame1-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/right/frame2-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/right/frame3-rdy.png"),
+		preload("res://assets/sprites/infantry/attack/right/frame4-rdy.png"),
+	],
+}
 
 # Track previous position for direction calculation and speed
 var last_position: Vector3 = Vector3.ZERO
@@ -62,6 +132,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if commander == null:
+		return
+
+	# Handle attack animation (blocks other behavior)
+	if anim_state == AnimState.ATTACKING:
+		update_attack_animation(delta)
 		return
 
 	# Update organic offset timer
@@ -109,11 +184,20 @@ func _process(delta: float) -> void:
 	else:
 		idle_timer = 0.0
 
-	# Update sprite facing: look at commander when idle, else face movement direction
+	# Update sprite facing and animation state
 	if idle_timer >= IDLE_LOOK_DELAY:
+		# Idle - look at commander
+		anim_state = AnimState.IDLE
 		look_at_commander()
 	elif move_dir.length_squared() > 0.001:
+		# Moving - update facing and walk animation
 		update_sprite_facing(move_dir)
+		anim_state = AnimState.WALKING
+		update_walk_animation(delta)
+	else:
+		# Transitioning to idle
+		anim_state = AnimState.IDLE
+		show_idle_sprite()
 
 	last_position = global_position
 
@@ -156,14 +240,19 @@ func update_sprite_facing(move_dir: Vector3) -> void:
 	if abs_z > abs_x:
 		# Moving primarily forward/backward
 		if move_dir.z > 0:
-			sprite.texture = tex_front  # Moving in +Z direction
+			current_facing = "front"
+			sprite.flip_h = false
 		else:
-			sprite.texture = tex_back   # Moving in -Z direction
-		sprite.flip_h = false
+			current_facing = "back"
+			sprite.flip_h = false
 	else:
 		# Moving primarily left/right
-		sprite.texture = tex_side
-		sprite.flip_h = move_dir.x > 0  # Flip for right movement
+		if move_dir.x > 0:
+			current_facing = "right"
+			sprite.flip_h = false
+		else:
+			current_facing = "left"
+			sprite.flip_h = false
 
 
 func look_at_commander() -> void:
@@ -178,11 +267,22 @@ func look_at_commander() -> void:
 	var abs_z: float = absf(dir_to_commander.z)
 
 	if abs_z > abs_x:
-		sprite.texture = tex_front if dir_to_commander.z > 0 else tex_back
+		if dir_to_commander.z > 0:
+			current_facing = "front"
+			sprite.texture = tex_front
+		else:
+			current_facing = "back"
+			sprite.texture = tex_back
 		sprite.flip_h = false
 	else:
-		sprite.texture = tex_side
-		sprite.flip_h = dir_to_commander.x > 0
+		if dir_to_commander.x > 0:
+			current_facing = "right"
+			sprite.texture = tex_side
+			sprite.flip_h = true  # Flip left sprite for right facing
+		else:
+			current_facing = "left"
+			sprite.texture = tex_side
+			sprite.flip_h = false
 
 
 func calculate_separation_offset() -> Vector3:
@@ -200,3 +300,75 @@ func calculate_separation_offset() -> Vector3:
 			var overlap: float = SEPARATION_DISTANCE - dist
 			separation += diff.normalized() * overlap * SEPARATION_STRENGTH
 	return separation
+
+
+# Animation functions
+
+func show_idle_sprite() -> void:
+	# Show idle sprite for current facing direction
+	match current_facing:
+		"front":
+			sprite.texture = tex_front
+			sprite.flip_h = false
+		"back":
+			sprite.texture = tex_back
+			sprite.flip_h = false
+		"left":
+			sprite.texture = tex_side
+			sprite.flip_h = false
+		"right":
+			sprite.texture = tex_side
+			sprite.flip_h = true
+
+
+func update_walk_animation(delta: float) -> void:
+	anim_timer += delta
+	var frame_duration := 1.0 / WALK_FPS
+	if anim_timer >= frame_duration:
+		anim_timer -= frame_duration
+		anim_frame = (anim_frame + 1) % 4  # 4 walk frames
+
+	var frames: Array = tex_walk.get(current_facing, tex_walk["front"])
+	sprite.texture = frames[anim_frame]
+	sprite.flip_h = false  # We have separate left/right sprites, no mirroring needed
+
+
+func update_attack_animation(delta: float) -> void:
+	anim_timer += delta
+	var frame_duration := 1.0 / ATTACK_FPS
+	if anim_timer >= frame_duration:
+		anim_timer -= frame_duration
+		anim_frame += 1
+		if anim_frame >= 4:  # 4 attack frames
+			# Attack finished - return to idle
+			anim_state = AnimState.IDLE
+			anim_frame = 0
+			anim_timer = 0.0
+			show_idle_sprite()
+			return
+
+	var frames: Array = tex_attack.get(current_facing, tex_attack["front"])
+	sprite.texture = frames[anim_frame]
+	sprite.flip_h = false  # We have separate left/right sprites, no mirroring needed
+
+
+func trigger_attack() -> void:
+	# Called by unit.gd to start attack animation
+	if anim_state == AnimState.ATTACKING:
+		return  # Already attacking
+	anim_state = AnimState.ATTACKING
+	anim_frame = 0
+	anim_timer = 0.0
+	var frames: Array = tex_attack.get(current_facing, tex_attack["front"])
+	sprite.texture = frames[0]
+	sprite.flip_h = false  # We have separate left/right sprites, no mirroring needed
+
+	# Play attack sound with pitch variation (lower volume, varied pitch for ensemble feel)
+	if attack_sound:
+		attack_sound.pitch_scale = randf_range(0.85, 1.15)  # Wider pitch variation for soldiers
+		attack_sound.play()
+
+	# Trigger attack impact particles
+	if attack_particles:
+		attack_particles.restart()
+		attack_particles.emitting = true

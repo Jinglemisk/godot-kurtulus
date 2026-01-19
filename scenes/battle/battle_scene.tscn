@@ -46,6 +46,22 @@ height = 3.0
 albedo_color = Color(0.3, 0.2, 0.15, 1)
 roughness = 0.9
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_victory"]
+bg_color = Color(0.1, 0.08, 0.05, 0.95)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.831, 0.686, 0.216, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 40.0
+content_margin_top = 30.0
+content_margin_right = 40.0
+content_margin_bottom = 30.0
+
 [node name="BattleScene" type="Node3D"]
 script = ExtResource("1_script")
 
@@ -159,6 +175,9 @@ surface_material_override/0 = SubResource("StandardMaterial3D_wood")
 [node name="Unit" parent="." instance=ExtResource("8_unit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
 
+[node name="EnemyUnit" parent="." instance=ExtResource("8_unit")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -20)
+
 [node name="CameraPivot" type="Node3D" parent="."]
 
 [node name="Camera3D" type="Camera3D" parent="CameraPivot"]
@@ -194,7 +213,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.99, 0.82, 0.5)
 theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 14
-text = "Phase 3: Formation"
+text = "Phase 5: Enemy Unit"
 
 [node name="TransitionLayer" type="CanvasLayer" parent="UI"]
 layer = 10
@@ -207,3 +226,52 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
+
+[node name="VictoryPopup" type="CenterContainer" parent="UI"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="UI/VictoryPopup"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_victory")
+
+[node name="VBox" type="VBoxContainer" parent="UI/VictoryPopup/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="UI/VictoryPopup/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.831, 0.686, 0.216, 1)
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 48
+text = "VICTORY!"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="UI/VictoryPopup/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.99, 0.82, 0.8)
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 24
+text = "Enemy Defeated"
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="UI/VictoryPopup/Panel/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 30
+
+[node name="PlayAgainButton" type="Button" parent="UI/VictoryPopup/Panel/VBox/Buttons"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 20
+text = "Play Again"
+
+[node name="MainMenuButton" type="Button" parent="UI/VictoryPopup/Panel/VBox/Buttons"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 20
+text = "Main Menu"

@@ -263,8 +263,92 @@ UI (CanvasLayer)
 
 ---
 
+### Phase 6b: Battle UI Enhancements ✓ COMPLETE
+**Goal:** HP bars, audio controls, discovery popup, and combat feedback
+
+**HP Bar System:**
+- [x] Player HP bar (top-left): Shows "Şemsettin" with green health bar and troop count
+- [x] Enemy HP bar (top-right): Shows "Yorgos", appears when within attack range (12 units)
+- [x] Ornate styling: Gold borders (#D4AF37), dark sepia background, cream text
+- [x] Smooth tween animation on HP changes (0.3s duration)
+- [x] Low HP color change: Bar turns bright red at ≤20% health
+
+**Audio Controls:**
+- [x] Battle volume reduced by 50% (-6 dB) after crossfade completes
+- [x] Mute button (bottom-right): Toggle with 🔊/🔇 emoji icons
+- [x] Mute state respected when volume is set after crossfade
+
+**Discovery Popup:**
+- [x] "Şemsettin has spotted Yorgos!" popup at bottom-center
+- [x] Triggers on first enemy proximity detection (within attack range)
+- [x] Slide-up animation with fade-in (0.4s)
+- [x] Auto-hides after 3 seconds with fade-out
+
+**Floating Damage Numbers:**
+- [x] "-250" damage text spawns at enemy position on hit
+- [x] Red text (#FF4D4D) with black outline for visibility
+- [x] Floats upward 60 pixels over 1 second
+- [x] Fades out after 0.3s delay
+- [x] Uses 3D-to-2D screen projection for positioning
+
+**Scene Structure Additions:**
+```
+UI (CanvasLayer)
+├── PlayerHPPanel (MarginContainer, top-left)
+│   └── OrnateFrame (PanelContainer with hp_frame style)
+│       └── VBoxContainer
+│           ├── CommanderName (Label - "Şemsettin")
+│           └── HealthBarContainer (HBoxContainer)
+│               ├── HealthBar (ProgressBar, green fill)
+│               └── TroopCountLabel (Label - "2000/2000")
+├── EnemyHPPanel (MarginContainer, top-right, initially hidden)
+│   └── OrnateFrame (PanelContainer)
+│       └── VBoxContainer
+│           ├── CommanderName (Label - "Yorgos")
+│           └── HealthBarContainer (HBoxContainer)
+│               ├── TroopCountLabel (Label)
+│               └── HealthBar (ProgressBar, red fill)
+├── ControlsHUD
+├── MuteButton (Button, bottom-right)
+├── DiscoveryPopup (CenterContainer, bottom-center, initially hidden)
+│   └── Panel (PanelContainer)
+│       └── DiscoveryLabel (Label)
+├── DamageNumbersContainer (Control, fullscreen)
+├── TransitionLayer
+└── VictoryPopup
+```
+
+**StyleBox Resources Added:**
+- `hp_frame`: Gold border, dark sepia background, rounded corners
+- `hp_bg`: Dark background for health bar track
+- `hp_fill_player`: Green fill (#408040)
+- `hp_fill_enemy`: Red fill (#A64040)
+- `hp_fill_critical`: Bright red fill (#CC2626) for low HP
+- `discovery_popup_style`: Subtle gold border, dark background
+
+**State Variables Added to battle_scene.gd:**
+```gdscript
+var enemy_discovered: bool = false
+var is_muted: bool = false
+var hp_fill_player_normal: StyleBoxFlat  # Stored in _ready()
+var hp_fill_enemy_normal: StyleBoxFlat
+var hp_fill_critical: StyleBoxFlat       # Created in _ready()
+const BATTLE_VOLUME_DB: float = -6.0
+const LOW_HP_THRESHOLD: float = 0.2
+```
+
+**Test:**
+1. Player HP bar always visible at top-left with "Şemsettin"
+2. Walk toward enemy → "Şemsettin has spotted Yorgos!" appears
+3. Enemy HP bar appears when within 12 units
+4. Attack enemy → Red "-250" floats up from enemy position
+5. After 7 attacks (500 HP) → Enemy HP bar turns bright red
+6. Mute button toggles audio on/off
+
+---
+
 ### Phase 7: STITCHING UP
-**Goal:** Implement death animations for units
+**Goal:** Death animations, basic enemy AI, defeat condition, and combat feedback polish
 
 **Death Animation:**
 - [ ] Create death animation sequence for soldiers and commander
@@ -273,16 +357,180 @@ UI (CanvasLayer)
 - [ ] Ensure smooth transition from current state to death animation
 - [ ] Optional: Add death particles/effects for visual feedback
 
-**Test:** When a unit dies, it plays the death animation instead of instantly disappearing.
+**Basic Enemy AI:**
+- [ ] Enemy remains stationary (no movement/chasing - keeps scope minimal)
+- [ ] When player enters attack range (12 units), enemy begins attacking
+- [ ] Attack cooldown: 5 seconds between attacks
+- [ ] Reuse existing attack cascade animation for enemy attacks
+- [ ] Deal `DAMAGE_PER_ATTACK` (250) to player unit on each attack
+- [ ] Implementation: Timer-based attack loop in `battle_scene.gd`
+
+```gdscript
+# Enemy AI constants
+const ENEMY_ATTACK_COOLDOWN: float = 5.0
+
+# State
+var enemy_attack_timer: float = 0.0
+var enemy_can_attack: bool = true
+
+func _process(delta: float) -> void:
+    # ... existing code ...
+    _update_enemy_ai(delta)
+
+func _update_enemy_ai(delta: float) -> void:
+    if not input_enabled:
+        return
+    if not enemy_can_attack:
+        enemy_attack_timer -= delta
+        if enemy_attack_timer <= 0.0:
+            enemy_can_attack = true
+    elif _is_in_attack_range():
+        _enemy_attack()
+
+func _enemy_attack() -> void:
+    enemy_can_attack = false
+    enemy_attack_timer = ENEMY_ATTACK_COOLDOWN
+    enemy_unit.trigger_attack_cascade()  # Reuse existing attack animation
+    player_unit.take_damage(DAMAGE_PER_ATTACK)
+    _trigger_screen_shake()
+    _spawn_damage_number(player_unit.global_position, DAMAGE_PER_ATTACK)
+    _update_player_hp_bar()
+```
+
+**Screen Shake on Damage:**
+- [ ] Add screen shake when player takes damage
+- [ ] Shake camera pivot with random offset, decay over 0.3s
+- [ ] Intensity proportional to damage or fixed intensity
+
+```gdscript
+const SHAKE_INTENSITY: float = 0.3
+const SHAKE_DURATION: float = 0.3
+
+var shake_timer: float = 0.0
+var original_camera_offset: Vector3
+
+func _trigger_screen_shake() -> void:
+    shake_timer = SHAKE_DURATION
+
+func _process(delta: float) -> void:
+    # ... existing code ...
+    _update_screen_shake(delta)
+
+func _update_screen_shake(delta: float) -> void:
+    if shake_timer > 0:
+        shake_timer -= delta
+        var intensity = SHAKE_INTENSITY * (shake_timer / SHAKE_DURATION)
+        var offset = Vector3(
+            randf_range(-intensity, intensity),
+            randf_range(-intensity, intensity) * 0.5,
+            randf_range(-intensity, intensity)
+        )
+        camera_pivot.position = camera_pivot.position.lerp(
+            commander.global_position + offset, 0.5
+        )
+```
+
+**Defeat Condition (Player Loses):**
+- [ ] Connect to player unit's `unit_defeated` signal
+- [ ] Show DefeatPopup when player troop_count reaches 0
+- [ ] Freeze input on defeat (same as victory)
+- [ ] DefeatPopup: "DEFEAT" title, "Your forces have been routed" subtitle
+- [ ] Same button options: "Try Again" and "Main Menu"
+
+```gdscript
+func _ready() -> void:
+    # ... existing connections ...
+    player_unit.unit_defeated.connect(_on_player_defeated)
+
+func _on_player_defeated() -> void:
+    input_enabled = false
+    await get_tree().create_timer(0.5).timeout
+    _show_defeat_popup()
+```
+
+**Critical Damage Popup (20% HP Threshold):**
+- [ ] Add `unit_critical` signal to `unit.gd`, emitted when HP first drops to ≤20%
+- [ ] Track `has_emitted_critical` bool to ensure one-time trigger
+- [ ] Show popup at bottom-center: "[Commander Name]'s unit has taken significant damage!"
+- [ ] Reuse DiscoveryPopup styling (slide-up, auto-hide after 3s)
+- [ ] Works for both player and enemy units
+
+```gdscript
+# unit.gd additions
+signal unit_critical(commander_name: String)
+var has_emitted_critical: bool = false
+
+func take_damage(amount: int) -> void:
+    troop_count = maxi(troop_count - amount, 0)
+    troop_count_changed.emit(troop_count, MAX_TROOP_COUNT)
+    _update_visible_soldiers()
+
+    # Check critical threshold (20%)
+    var hp_ratio = float(troop_count) / float(MAX_TROOP_COUNT)
+    if hp_ratio <= 0.2 and not has_emitted_critical and troop_count > 0:
+        has_emitted_critical = true
+        unit_critical.emit(commander_name)
+
+    if troop_count <= 0:
+        unit_defeated.emit()
+```
+
+```gdscript
+# battle_scene.gd
+func _ready() -> void:
+    # ... existing code ...
+    player_unit.unit_critical.connect(_on_unit_critical)
+    enemy_unit.unit_critical.connect(_on_unit_critical)
+
+func _on_unit_critical(commander_name: String) -> void:
+    _show_critical_popup(commander_name + "'s unit has taken significant damage!")
+
+func _show_critical_popup(message: String) -> void:
+    # Reuse DiscoveryPopup or create CriticalPopup with same styling
+    critical_popup_label.text = message
+    critical_popup.visible = true
+    # Slide-up animation, auto-hide after 3s (same as discovery popup)
+```
+
+**Scene Structure Additions:**
+```
+UI (CanvasLayer)
+├── ... existing nodes ...
+├── CriticalPopup (CenterContainer - bottom-center, same style as DiscoveryPopup)
+│   └── Panel → CriticalLabel
+└── DefeatPopup (CenterContainer - center, same style as VictoryPopup)
+    └── Panel → Title ("DEFEAT") + Subtitle + Buttons
+```
+
+**Test:**
+1. Move toward enemy, get within attack range
+2. Wait 5 seconds - enemy attacks, player takes 250 damage
+3. Screen shakes on player damage
+4. Player HP bar updates, floating damage number appears
+5. When player HP ≤ 20% (400 troops): "Şemsettin's unit has taken significant damage!" popup
+6. When enemy HP ≤ 20%: "Yorgos's unit has taken significant damage!" popup
+7. If player HP reaches 0: Defeat popup with "Try Again" / "Main Menu"
+8. Death animations play when units are defeated
 
 ---
 
-### Phase 5 & 6 Files Summary
+### Phase 7 Files Summary
 
 | File | Changes |
 |------|---------|
-| `scenes/battle/battle_scene.tscn` | EnemyUnit ✓, VictoryPopup UI ✓, StyleBoxFlat_victory ✓ |
-| `scenes/battle/battle_scene.gd` | Attack range ✓, damage routing ✓, victory popup ✓, button handlers ✓ |
+| `scenes/battle/battle_scene.tscn` | DefeatPopup UI, CriticalPopup UI |
+| `scenes/battle/battle_scene.gd` | Enemy AI timer loop, screen shake, defeat handler, critical popup handler |
+| `scenes/battle/components/unit.gd` | `unit_critical` signal, `has_emitted_critical` flag, `commander_name` property |
+| `assets/sprites/*/` | Death animation frames (if created) |
+
+---
+
+### Phase 5, 6 & 6b Files Summary
+
+| File | Changes |
+|------|---------|
+| `scenes/battle/battle_scene.tscn` | EnemyUnit ✓, VictoryPopup UI ✓, StyleBoxFlat_victory ✓, HP panels ✓, MuteButton ✓, DiscoveryPopup ✓, DamageNumbersContainer ✓, HP StyleBoxes ✓ |
+| `scenes/battle/battle_scene.gd` | Attack range ✓, damage routing ✓, victory popup ✓, button handlers ✓, HP bar logic ✓, mute toggle ✓, discovery popup ✓, floating damage numbers ✓, low HP color ✓ |
 | `scenes/battle/components/unit.tscn` | (no changes) |
 | `scenes/battle/components/unit.gd` | troop_count ✓, take_damage() ✓, signals ✓, soldier visibility ✓, commander death ✓ |
 
@@ -410,7 +658,7 @@ get_tree().change_scene_to_file("res://scenes/battle/battle_scene.tscn")
                                                                                                       
 ## Scene Hierarchy (3D with Billboarded Sprites)
 
-### battle_scene.tscn (Phase 4 - Current)
+### battle_scene.tscn (Phase 6b - Current)
 ```
 BattleScene (Node3D)
 ├── Environment (WorldEnvironment)
@@ -426,20 +674,23 @@ BattleScene (Node3D)
 ├── Unit (unit.tscn - player squad)
 │   ├── Commander (commander.tscn)
 │   └── Squad (10 soldiers in 5×2 formation)
+├── EnemyUnit (unit.tscn at z=-20, red modulate, rotated 180°)
 ├── CameraPivot (Node3D) - follows commander position
 │   └── Camera3D (offset: 0, 8, 12 - looking down ~30°)
 └── UI (CanvasLayer)
+    ├── PlayerHPPanel (MarginContainer - top-left, always visible)
+    │   └── OrnateFrame → VBox → CommanderName + HealthBar + TroopCount
+    ├── EnemyHPPanel (MarginContainer - top-right, proximity-based visibility)
+    │   └── OrnateFrame → VBox → CommanderName + HealthBar + TroopCount
     ├── ControlsHUD (MarginContainer - bottom-left)
-    └── TransitionLayer (CanvasLayer layer=10)
-        └── FadeRect (for transitions)
-```
-
-### battle_scene.tscn (Phase 5 - Future)
-```
-BattleScene (Node3D)
-├── ... (Phase 4 structure above)
-├── EnemyUnit (unit.tscn at z=-20, red modulate, rotated 180°)
-└── AudioStreamPlayer (battle-music.mp3, autoplay)
+    ├── MuteButton (Button - bottom-right, 🔊/🔇 toggle)
+    ├── DiscoveryPopup (CenterContainer - bottom-center, one-time trigger)
+    │   └── Panel → DiscoveryLabel
+    ├── DamageNumbersContainer (Control - fullscreen, spawns damage labels)
+    ├── TransitionLayer (CanvasLayer layer=10)
+    │   └── FadeRect (for transitions)
+    └── VictoryPopup (CenterContainer - center, shown on enemy defeat)
+        └── Panel → Title + Subtitle + Buttons
 ```
 
 ### unit.tscn
